@@ -22,6 +22,20 @@
 
 **AutoDev AI** is an autonomous code generation platform powered by a multi-agent AI system. Describe your project in natural language, and watch specialized AI agents collaborate to build complete, production-ready applications.
 
+```mermaid
+graph LR
+    A[User Input] --> B[Planner Agent]
+    B --> C[Architect Agent]
+    C --> D[Coder Agent]
+    D --> E[Complete Project]
+    
+    style A fill:#2a2a2a,stroke:#fff,color:#fff
+    style B fill:#3a3a3a,stroke:#fff,color:#fff
+    style C fill:#4a4a4a,stroke:#fff,color:#fff
+    style D fill:#5a5a5a,stroke:#fff,color:#fff
+    style E fill:#fff,stroke:#000,color:#000
+```
+
 ### What Makes It Different
 
 - Multi-Agent Architecture with three specialized AI agents
