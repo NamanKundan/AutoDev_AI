@@ -12,7 +12,7 @@
 [![Groq](https://img.shields.io/badge/Groq-Powered-F55036?style=flat-square)](https://groq.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-[**Live Demo**](https://autodev-ai.streamlit.app/) • [**Quick Start**](#quick-start) • [**Features**](#key-features)
+[**Live Demo**](https://auto-dev-ai-app-generator.streamlit.app/) • [**Quick Start**](#quick-start) • [**Features**](#key-features)
 
 </div>
 
