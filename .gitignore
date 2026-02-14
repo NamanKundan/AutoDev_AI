@@ -26,4 +26,7 @@ wheels/
 # System files
 .DS_Store
 
+# Generated projects
+generated_projects/
+
 Extra/

@@ -13,66 +13,50 @@ from agent.tools import write_file, read_file, get_current_directory, list_files
 # Load environment variables
 _ = load_dotenv()
 
-# Handle both local development and Streamlit Cloud
-groq_api_key = None
-
-# Try multiple ways to get the API key
-try:
-    import streamlit as st
-    # First priority: Check session state for user-provided API key
-    if hasattr(st, 'session_state') and 'groq_api_key' in st.session_state:
-        groq_api_key = st.session_state.groq_api_key
-        if groq_api_key:
-            groq_api_key = groq_api_key.strip()
+def get_llm():
+    """Get ChatGroq LLM with current API key from session state or environment."""
+    groq_api_key = None
     
-    # Second priority: Try to get from Streamlit secrets
+    # Try multiple ways to get the API key
+    try:
+        import streamlit as st
+        # First priority: Check session state for user-provided API key
+        if hasattr(st, 'session_state') and 'groq_api_key' in st.session_state:
+            groq_api_key = st.session_state.groq_api_key
+            if groq_api_key:
+                groq_api_key = groq_api_key.strip()
+        
+        # Second priority: Try to get from Streamlit secrets
+        if not groq_api_key:
+            try:
+                if hasattr(st, 'secrets'):
+                    groq_api_key = st.secrets.get("GROQ_API_KEY", None)
+                    # Clean the key - remove any whitespace
+                    groq_api_key = groq_api_key.strip() if groq_api_key else None
+            except:
+                pass  # Secrets file doesn't exist, will use env variable
+    except (ImportError, AttributeError, KeyError):
+        pass
+    
+    # Fallback to environment variable
     if not groq_api_key:
-        try:
-            if hasattr(st, 'secrets'):
-                groq_api_key = st.secrets.get("GROQ_API_KEY", None)
-                # Clean the key - remove any whitespace
-                groq_api_key = groq_api_key.strip() if groq_api_key else None
-        except:
-            pass  # Secrets file doesn't exist, will use env variable
-except (ImportError, AttributeError, KeyError):
-    pass
-
-# Fallback to environment variable
-if not groq_api_key:
-    groq_api_key = os.getenv("GROQ_API_KEY")
-
-# If still no API key, try to initialize ChatGroq without explicit key (it may find it itself)
-if not groq_api_key:
-    # Set a placeholder and let ChatGroq handle it
-    os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
-
-# Initialize ChatGroq
-try:
-    if groq_api_key and groq_api_key.startswith('gsk_'):
-        # Ensure the API key is properly formatted
-        llm = ChatGroq(
-            api_key=groq_api_key,
-            model="openai/gpt-oss-120b",
+        groq_api_key = os.getenv("GROQ_API_KEY")
+    
+    # Initialize ChatGroq with the API key
+    if groq_api_key and groq_api_key.strip():
+        return ChatGroq(
+            api_key=groq_api_key.strip(),
+            model="mixtral-8x7b-32768",
             temperature=0.1
         )
     else:
-        # Set environment variable and let ChatGroq find it
-        if groq_api_key:
-            os.environ["GROQ_API_KEY"] = groq_api_key
-        llm = ChatGroq(
-            model="openai/gpt-oss-120b",
-            temperature=0.1
-        )
-except Exception as e:
-    # Last resort - basic initialization
-    if groq_api_key:
-        os.environ["GROQ_API_KEY"] = groq_api_key
-    llm = ChatGroq(model="openai/gpt-oss-120b")
+        raise ValueError("No valid GROQ API key found. Please provide your API key.")
 
 
 def planner_agent(state: dict) -> dict:
     """Converts user prompt into a structured Plan."""
     user_prompt = state["user_prompt"]
+    llm = get_llm()
     resp = llm.with_structured_output(Plan).invoke(
         planner_prompt(user_prompt)
     )
@@ -84,6 +68,7 @@ def planner_agent(state: dict) -> dict:
 def architect_agent(state: dict) -> dict:
     """Creates TaskPlan from Plan."""
     plan: Plan = state["plan"]
+    llm = get_llm()
     resp = llm.with_structured_output(TaskPlan).invoke(
         architect_prompt(plan=plan.model_dump_json())
     )
@@ -117,6 +102,7 @@ def coder_agent(state: dict) -> dict:
     )
 
     coder_tools = [read_file, write_file, list_files, get_current_directory]
+    llm = get_llm()
     react_agent = create_react_agent(llm, coder_tools)
 
     try:
