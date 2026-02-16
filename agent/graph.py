@@ -17,36 +17,39 @@ def get_llm():
     """Get ChatGroq LLM with current API key from session state or environment."""
     groq_api_key = None
     
-    # Try multiple ways to get the API key
+    # Try to get from Streamlit session state first (for user-provided keys)
     try:
         import streamlit as st
-        # First priority: Check session state for user-provided API key
         if hasattr(st, 'session_state') and 'groq_api_key' in st.session_state:
             groq_api_key = st.session_state.groq_api_key
             if groq_api_key:
                 groq_api_key = groq_api_key.strip()
-        
-        # Second priority: Try to get from Streamlit secrets
-        if not groq_api_key:
-            try:
-                if hasattr(st, 'secrets'):
-                    groq_api_key = st.secrets.get("GROQ_API_KEY", None)
-                    # Clean the key - remove any whitespace
-                    groq_api_key = groq_api_key.strip() if groq_api_key else None
-            except:
-                pass  # Secrets file doesn't exist, will use env variable
     except (ImportError, AttributeError, KeyError):
         pass
+    
+    # Try Streamlit secrets if not in session state
+    if not groq_api_key:
+        try:
+            import streamlit as st
+            if hasattr(st, 'secrets'):
+                try:
+                    groq_api_key = st.secrets.get("GROQ_API_KEY")
+                    if groq_api_key:
+                        groq_api_key = groq_api_key.strip()
+                except Exception:
+                    pass
+        except (ImportError, AttributeError):
+            pass
     
     # Fallback to environment variable
     if not groq_api_key:
         groq_api_key = os.getenv("GROQ_API_KEY")
     
-    # Initialize ChatGroq with the API key
+    # Create and return the LLM instance
     if groq_api_key and groq_api_key.strip():
         return ChatGroq(
             api_key=groq_api_key.strip(),
-            model="mixtral-8x7b-32768",
+            model="llama-3.3-70b-versatile",
             temperature=0.1
         )
     else:
